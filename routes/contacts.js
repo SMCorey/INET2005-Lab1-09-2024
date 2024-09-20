@@ -30,7 +30,7 @@ router.get('/:id', (req, res) => {
     res.send('Contact by id ' + id);
 });
   
-// Create a contact
+// Create a contact (with multer)
 router.post('/create',upload.single('image'), (req, res) => {
     const filename = req.file? req.file.filename : '';
     const {first_name, last_name, email, phone} = req.body
@@ -41,14 +41,14 @@ router.post('/create',upload.single('image'), (req, res) => {
     res.send('create route');
 });
 
-// Update a contact
-router.put('/update', upload.single('image'), (req, res) => {
+// Update a contact by ID (with Multer)
+router.put('/update:id', upload.single('image'), (req, res) => {
     const id = req.params.id;
     res.send('update route');
 });
 
 // Delete a contact
-router.delete('/delete', (req, res) => {
+router.delete('/delete:id', (req, res) => {
     res.send('delete route');
 });
 
