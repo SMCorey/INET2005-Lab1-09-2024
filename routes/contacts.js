@@ -1,7 +1,14 @@
 import express from 'express';
 import multer from 'multer';
+import { PrismaClient } from '@prisma/client';
+
 
 const router = express.Router();
+
+//PRISMA Setup
+const prisma = new PrismaClient({
+    log: ['query', 'info', 'warn', 'error'],
+});
 
 //Multer setup
 const storage = multer.diskStorage({
@@ -20,25 +27,39 @@ const upload = multer({ storage: storage });
 /// ROUTES ////
 
 // Get all contacts
-router.get('/all', (req, res) => {
-    res.send('All contacts');
+router.get('/all', async (req, res) => {
+    const contacts = await prisma.contact.findMany();
+    res.json(contacts);
 });
   
 // Get a contact by id
-router.get('/:id', (req, res) => {
+router.get('/get/:id', async (req, res) => {
     const id = req.params.id;
-    res.send('Contact by id ' + id);
+    const contact = await prisma.contact.findUnique({
+        where: {
+            id: parseInt(id),
+        }
+    })
+        res.json(contact);
 });
   
 // Create a contact (with multer)
-router.post('/create',upload.single('image'), (req, res) => {
-    const filename = req.file? req.file.filename : '';
-    const {first_name, last_name, email, phone} = req.body
+router.post('/create',upload.single('image'), async (req, res) => {
+    const filename = req.file? req.file.filename : null;
+    const {firstName, lastName,title, email, phone} = req.body
 
-    console.log("Uploaded file :" + filename);
-    console.log(`My contact's name: ${first_name} ${last_name}`);
+    const contact = await prisma.contact.create({
+        data: {
+            firstName: firstName,
+            lastName: lastName,
+            title: title,
+            email: email,
+            phone: phone,
+            filename: filename
+        },
+    });
 
-    res.send('create route');
+    res.json(contact);
 });
 
 // Update a contact by ID (with Multer)
@@ -51,6 +72,9 @@ router.put('/update:id', upload.single('image'), (req, res) => {
 router.delete('/delete:id', (req, res) => {
     res.send('delete route');
 });
+
+
+    
 
 
 export default router;
