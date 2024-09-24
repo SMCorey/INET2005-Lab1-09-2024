@@ -46,7 +46,7 @@ router.get('/get/:id', async (req, res) => {
             id: parseInt(id),
         }
     })
-       contact ? res.json(contact): res.status(404).json({message: "contact not found"});
+    contact ? res.json(contact): res.status(404).json({message: "contact not found"});
 });
   
 // Create a contact (with multer)
@@ -77,11 +77,50 @@ router.post('/create',upload.single('image'), async (req, res) => {
 
 // Update a contact by ID (with Multer)
 
-router.put('/update:id', upload.single('image'), (req, res) => {
+router.put('/update/:id', upload.single('image'), async (req, res) => {
 
-    // validate ID // return 404 if not found
+    const id = req.params.id;
+    // validate if ID is a number
+    if (isNaN(id) ){
+        res.status(400).json({message: "Invalid ID"});
+        return;
+    }
+
+    let contact = await prisma.contact.findUnique({
+        where: {
+            id: parseInt(id),
+        }
+    })
+    // let filename = contact.filename;
+    // console.log(filename)
+    // if (req.file){
+    //     filename = req.file.filename;
+    // }
+//    const filename = req.file.filename && contact.filename;
     
+    const {firstName, lastName,title, email, phone} = req.body;
+    // firstName ? contact.firstName = firstName : null
+    // contact.lastName = lastName ??  contact.lastName?
+    // title ? contact.title = title : null
+    // email ? contact.email = email : null
+    // phone ? contact.phone = phone : null
+
+
+
     // capture inputs
+    contact = await prisma.contact.update({
+        where: {
+            id: parseInt(id)
+        },
+        data: {
+            firstName: firstName || contact.firstName ,
+            lastName: lastName || contact.lastName,
+            title: title,
+            email: email,
+            phone: phone,
+            filename: req.filename || contact.filename
+        },
+    });
     // validate inputs
 
     // make blank filename variable.
@@ -90,8 +129,8 @@ router.put('/update:id', upload.single('image'), (req, res) => {
     
     // update record in the db.
 
-    const id = req.params.id;
-    res.send('update route');
+    
+    contact ? res.json(contact): res.status(404).json({message: "contact not found"});
 });
 
 // Delete a contact
