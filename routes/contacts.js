@@ -76,7 +76,6 @@ router.post('/create',upload.single('image'), async (req, res) => {
 });
 
 // Update a contact by ID (with Multer)
-
 router.put('/update/:id', upload.single('image'), async (req, res) => {
 
     const id = req.params.id;
@@ -99,13 +98,6 @@ router.put('/update/:id', upload.single('image'), async (req, res) => {
 //    const filename = req.file.filename && contact.filename;
     
     const {firstName, lastName,title, email, phone} = req.body;
-    // firstName ? contact.firstName = firstName : null
-    // contact.lastName = lastName ??  contact.lastName?
-    // title ? contact.title = title : null
-    // email ? contact.email = email : null
-    // phone ? contact.phone = phone : null
-
-
 
     // capture inputs
     contact = await prisma.contact.update({
@@ -115,28 +107,31 @@ router.put('/update/:id', upload.single('image'), async (req, res) => {
         data: {
             firstName: firstName || contact.firstName ,
             lastName: lastName || contact.lastName,
-            title: title,
-            email: email,
-            phone: phone,
+            title: title || contact.title,
+            email: email || contact.email,
+            phone: phone || contact.phone,
             filename: req.filename || contact.filename
         },
     });
-    // validate inputs
-
-    // make blank filename variable.
+       // make blank filename variable.
     // if file is uploaded: get file name to save in db. delete old image file. Set the file name to new file name.
     // if image file NOT uploaded: when updating record with prisma, set the filename to old file name.
     
     // update record in the db.
 
-    
     contact ? res.json(contact): res.status(404).json({message: "contact not found"});
 });
 
 // Delete a contact
-router.delete('/delete:id', (req, res) => {
+router.delete('/delete/:id', (req, res) => {
 
-    // validate ID. Return 404 if not found
+    const id = req.params.id;
+    // validate if ID is a number
+    if (isNaN(id) ){
+        res.status(400).json({message: "Invalid ID"});
+        return;
+    }
+
     // delete image
     // delete record from DB.
 
