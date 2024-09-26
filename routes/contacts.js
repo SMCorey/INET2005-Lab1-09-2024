@@ -1,7 +1,7 @@
 import express from 'express';
 import multer from 'multer';
 import { PrismaClient } from '@prisma/client';
-
+import { existsSync, unlink } from 'node:fs';
 
 const router = express.Router();
 
@@ -56,8 +56,6 @@ router.post('/create',upload.single('image'), async (req, res) => {
 
     // verify required fields have value
     if(!firstName || !lastName || !email || !phone){
-
-        // TODO: delete file // create method for deletion
         return res.status(400).json({message: "Required fields must have a value."});
     }
 
@@ -77,29 +75,30 @@ router.post('/create',upload.single('image'), async (req, res) => {
 
 // Update a contact by ID (with Multer)
 router.put('/update/:id', upload.single('image'), async (req, res) => {
-
+    const filename = req.file? req.file.filename : null;
     const id = req.params.id;
+
     // validate if ID is a number
     if (isNaN(id) ){
         res.status(400).json({message: "Invalid ID"});
         return;
     }
 
+    // get previously store contact info
     let contact = await prisma.contact.findUnique({
         where: {
             id: parseInt(id),
         }
     })
-    // let filename = contact.filename;
-    // console.log(filename)
-    // if (req.file){
-    //     filename = req.file.filename;
-    // }
-//    const filename = req.file.filename && contact.filename;
+
+   // old file deletion
+    if (filename && contact.filename != '') { 
+        fileDel(contact.filename)
+    }
     
     const {firstName, lastName,title, email, phone} = req.body;
 
-    // capture inputs
+    // capture relevant inputs
     contact = await prisma.contact.update({
         where: {
             id: parseInt(id)
@@ -110,20 +109,15 @@ router.put('/update/:id', upload.single('image'), async (req, res) => {
             title: title || contact.title,
             email: email || contact.email,
             phone: phone || contact.phone,
-            filename: req.filename || contact.filename
+            filename: filename || contact.filename
         },
     });
-       // make blank filename variable.
-    // if file is uploaded: get file name to save in db. delete old image file. Set the file name to new file name.
-    // if image file NOT uploaded: when updating record with prisma, set the filename to old file name.
-    
-    // update record in the db.
 
     contact ? res.json(contact): res.status(404).json({message: "contact not found"});
 });
 
 // Delete a contact
-router.delete('/delete/:id', (req, res) => {
+router.delete('/delete/:id', async (req, res) => {
 
     const id = req.params.id;
     // validate if ID is a number
@@ -131,15 +125,38 @@ router.delete('/delete/:id', (req, res) => {
         res.status(400).json({message: "Invalid ID"});
         return;
     }
+    
+    let deleteContact = await prisma.contact.findUnique({
+        where: {
+            id: parseInt(id),
+        }
+    })
+    // deleteContact? 
+    // if (deleteContact.filename && deleteContact.filename != ''){
+    //     fileDel(deleteContact.filename)
+    // }
 
-    // delete image
-    // delete record from DB.
+    deleteContact = await prisma.contact.delete({
+        where: {
+            id: parseInt(id),
+        }
+    })
 
-    res.send('delete route');
+    res.json('Contact deleted');
 });
 
 
-    
+function fileDel(filename){
+    // old file deletion   // code pulled and modified from https://nodejs.org/api/fs.html#fs_file_system and https://stackoverflow.com/questions/17699599/node-js-check-if-file-exists
+
+   const toDelete = `public/images/${filename}`
+   if (existsSync(toDelete)) {
+    unlink(`${toDelete}`,
+        (err) => {
+            if (err) res.status(400).json("Could not delete image. " + err);
+        })
+   }
+}
 
 
 export default router;
